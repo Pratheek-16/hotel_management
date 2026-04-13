@@ -1,0 +1,344 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Reservations — HotelAurum</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .status-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .step {
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #f3f4f6;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+    .step.active   { background: #6366f1; color: #fff; }
+    .step.done     { background: #d1fae5; color: #065f46; }
+    .step.cancelled{ background: #fee2e2; color: #991b1b; }
+    .step-arrow { color: #d1d5db; padding: 0 3px; font-size: 10px; }
+
+    .badge-pending    { background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-confirmed  { background:#ede9fe; color:#5b21b6; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-checkedin  { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-checkedout { background:#dbeafe; color:#1e40af; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-cancelled  { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+
+    .action-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .btn-sm { padding:4px 10px; font-size:12px; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
+    .btn-update { background:#6366f1; color:#fff; }
+    .btn-cancel { background:#fee2e2; color:#991b1b; }
+    .btn-update:hover { background:#4f46e5; }
+    .btn-cancel:hover { background:#fecaca; }
+
+    /* Modal */
+    .modal-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.4); z-index:999;
+      align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:#fff; border-radius:14px; padding:32px;
+      width:420px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,0.18);
+    }
+    .modal h3 { margin:0 0 6px; font-size:17px; }
+    .modal p  { margin:0 0 20px; color:#6b7280; font-size:13px; }
+    .modal select, .modal textarea {
+      width:100%; padding:10px 12px; border:1px solid #e5e7eb;
+      border-radius:8px; font-size:14px; margin-bottom:14px;
+      box-sizing:border-box;
+    }
+    .modal textarea { resize:vertical; min-height:80px; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+    .btn-modal-confirm { background:#6366f1; color:#fff; border:none; padding:9px 22px; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn-modal-cancel-confirm { background:#ef4444; color:#fff; border:none; padding:9px 22px; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn-modal-close { background:#f3f4f6; color:#374151; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-weight:600; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="sidebar-logo-text">
+        <h1>Hotel Aurum</h1>
+        <p>Management System</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard/"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/customers/"><span class="nav-icon">👤</span> Customers</a>
+      <a href="/hotels/"><span class="nav-icon">🏨</span> Hotels</a>
+      <a href="/rooms/"><span class="nav-icon">🛏</span> Rooms</a>
+      <div class="nav-label">Operations</div>
+      <a href="/reservation/" class="active"><span class="nav-icon">📅</span> Reservations</a>
+      <a href="/payment/"><span class="nav-icon">💳</span> Payments</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/logout/">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Reservations</div>
+        <div class="topbar-sub">Book, track and manage room reservations</div>
+      </div>
+      <div class="topbar-badge">Admin</div>
+    </div>
+
+    <div class="page">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Status Flow Info -->
+      <div class="card" style="padding:18px 24px;">
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">Reservation Status Flow</div>
+        <div class="status-stepper">
+          <span class="step">🕐 Pending</span>
+          <span class="step-arrow">→</span>
+          <span class="step">✅ Confirmed</span>
+          <span class="step-arrow">→</span>
+          <span class="step">🏨 Checked In</span>
+          <span class="step-arrow">→</span>
+          <span class="step">👋 Checked Out</span>
+          <span class="step-arrow">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
+          <span class="step cancelled">❌ Cancelled</span>
+        </div>
+      </div>
+
+      <!-- New Reservation Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">New Reservation <span>Fill in the details below</span></div>
+        </div>
+        <form method="post" onsubmit="return validateReservation()">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Select Customer</label>
+              <select name="customer" required>
+                <option value="">— Choose Customer —</option>
+                {% for c in customers %}
+                <option value="{{ c.Cus_ID }}">{{ c.Name }} (ID: {{ c.Cus_ID }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Select Available Room</label>
+              <select name="room" id="roomSelect" required onchange="calcTotal()">
+                <option value="">— Choose Room —</option>
+                {% for r in available_rooms %}
+                <option value="{{ r.Room_ID }}" data-price="{{ r.price }}">
+                  Room {{ r.Room_ID }} — {{ r.category }} (₹{{ r.price }}/night)
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Check-In Date</label>
+              <input type="date" name="checkin" id="checkin" required onchange="calcTotal()">
+            </div>
+            <div class="form-group">
+              <label>Check-Out Date</label>
+              <input type="date" name="checkout" id="checkout" required onchange="calcTotal()">
+            </div>
+          </div>
+          <div class="price-summary" id="priceSummary" style="display:none;">
+            <div class="price-row"><span>Room Rate</span><span id="rateDisplay">—</span></div>
+            <div class="price-row"><span>Nights</span><span id="nightsDisplay">—</span></div>
+            <div class="price-row total"><span>Total Amount</span><span id="totalDisplay">—</span></div>
+          </div>
+          <button type="submit" class="btn btn-primary">✅ Confirm Reservation</button>
+        </form>
+      </div>
+
+      <!-- Reservations Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">All Reservations <span>Track and manage bookings</span></div>
+        </div>
+        {% if data %}
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Room</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in data %}
+            <tr>
+              <td>#{{ r.Reservation_ID }}</td>
+              <td>{{ r.customer_name }}</td>
+              <td>Room {{ r.Room_ID }}</td>
+              <td>{{ r.Check_In_Date }}</td>
+              <td>{{ r.Check_Out_Date }}</td>
+              <td>
+                {% if r.Status == 'Pending' %}
+                  <span class="badge-pending">🕐 Pending</span>
+                {% elif r.Status == 'Confirmed' %}
+                  <span class="badge-confirmed">✅ Confirmed</span>
+                {% elif r.Status == 'Checked In' %}
+                  <span class="badge-checkedin">🏨 Checked In</span>
+                {% elif r.Status == 'Checked Out' %}
+                  <span class="badge-checkedout">👋 Checked Out</span>
+                {% elif r.Status == 'Cancelled' %}
+                  <span class="badge-cancelled">❌ Cancelled</span>
+                {% else %}
+                  <span>{{ r.Status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if r.Status != 'Cancelled' and r.Status != 'Checked Out' %}
+                <div class="action-btns">
+                  <button class="btn-sm btn-update"
+                    onclick="openStatusModal({{ r.Reservation_ID }}, '{{ r.Status }}')">
+                    ✏️ Update
+                  </button>
+                  <button class="btn-sm btn-cancel"
+                    onclick="openCancelModal({{ r.Reservation_ID }})">
+                    ✕ Cancel
+                  </button>
+                </div>
+                {% else %}
+                  <span style="color:#9ca3af;font-size:12px;">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="empty-msg">No reservations yet.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Status Update Modal ── -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal">
+    <h3>✏️ Update Reservation Status</h3>
+    <p>Select the new status for this reservation. An email will be sent to the customer.</p>
+    <form method="post" id="statusForm">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_status">
+      <input type="hidden" name="reservation_id" id="statusResId">
+      <select name="new_status" id="statusSelect">
+        <option value="Pending">🕐 Pending</option>
+        <option value="Confirmed">✅ Confirmed</option>
+        <option value="Checked In">🏨 Checked In</option>
+        <option value="Checked Out">👋 Checked Out</option>
+      </select>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-close" onclick="closeModals()">Cancel</button>
+        <button type="submit" class="btn-modal-confirm">Update Status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Cancel Modal ── -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal">
+    <h3>❌ Cancel Reservation</h3>
+    <p>This will free up the room and send a cancellation email to the customer.</p>
+    <form method="post" id="cancelForm">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="cancel">
+      <input type="hidden" name="reservation_id" id="cancelResId">
+      <textarea name="cancel_reason" placeholder="Reason for cancellation (optional)..."></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-close" onclick="closeModals()">Go Back</button>
+        <button type="submit" class="btn-modal-cancel-confirm">Confirm Cancellation</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openStatusModal(resId, currentStatus) {
+  document.getElementById('statusResId').value = resId;
+  document.getElementById('statusSelect').value = currentStatus;
+  document.getElementById('statusModal').classList.add('open');
+}
+function openCancelModal(resId) {
+  document.getElementById('cancelResId').value = resId;
+  document.getElementById('cancelModal').classList.add('open');
+}
+function closeModals() {
+  document.getElementById('statusModal').classList.remove('open');
+  document.getElementById('cancelModal').classList.remove('open');
+}
+// Close on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', function(e) {
+    if (e.target === el) closeModals();
+  });
+});
+
+function calcTotal() {
+  const roomSelect = document.getElementById('roomSelect');
+  const checkin = document.getElementById('checkin').value;
+  const checkout = document.getElementById('checkout').value;
+  const summary = document.getElementById('priceSummary');
+  if (!roomSelect.value || !checkin || !checkout) { summary.style.display='none'; return; }
+  const price = parseFloat(roomSelect.selectedOptions[0].dataset.price);
+  const nights = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
+  if (nights <= 0) { summary.style.display='none'; return; }
+  document.getElementById('rateDisplay').textContent = '₹' + price.toFixed(2) + '/night';
+  document.getElementById('nightsDisplay').textContent = nights + ' night(s)';
+  document.getElementById('totalDisplay').textContent = '₹' + (price * nights).toFixed(2);
+  summary.style.display = 'block';
+}
+function validateReservation() {
+  const checkin = new Date(document.getElementById('checkin').value);
+  const checkout = new Date(document.getElementById('checkout').value);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (checkin < today) { alert('Check-in cannot be in the past.'); return false; }
+  if (checkout <= checkin) { alert('Check-out must be after check-in.'); return false; }
+  return confirm('Confirm this reservation?');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('checkin').min = today;
+  document.getElementById('checkout').min = today;
+  document.getElementById('checkin').addEventListener('change', function() {
+    document.getElementById('checkout').min = this.value;
+  });
+});
+</script>
+</body>
+</html>

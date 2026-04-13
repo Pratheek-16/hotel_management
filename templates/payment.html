@@ -1,0 +1,169 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Payments — HotelAurum</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="layout">
+
+ <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="sidebar-logo-text">
+        <h1>Hotel Aurum</h1>
+        <p>Management System</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard/"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/customers/"><span class="nav-icon">👤</span> Customers</a>
+      <a href="/hotels/"><span class="nav-icon">🏨</span> Hotels</a>
+      <a href="/rooms/"><span class="nav-icon">🛏</span> Rooms</a>
+      <div class="nav-label">Operations</div>
+      <a href="/reservation/"><span class="nav-icon">📅</span> Reservations</a>
+      <a href="/payment/"  class="active"><span class="nav-icon">💳</span> Payments</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/login/">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Payments</div>
+        <div class="topbar-sub">Process and track all payments</div>
+      </div>
+      <div class="topbar-badge"> Admin</div>
+    </div>
+
+    <div class="page">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Record Payment <span>Select a reservation to process</span></div>
+        </div>
+
+        <form method="post" onsubmit="return confirmPayment()">
+          {% csrf_token %}
+
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Select Reservation</label>
+            <select name="reservation" id="reservationSelect" required onchange="fillAmount()">
+              <option value="">— Choose Reservation —</option>
+              {% for r in unpaid_reservations %}
+              <option value="{{ r.Reservation_ID }}" data-amount="{{ r.total_amount }}">
+                #{{ r.Reservation_ID }} — {{ r.customer_name }} | Room {{ r.Room_ID }} | {{ r.Check_In_Date }} → {{ r.Check_Out_Date }} | ₹{{ r.total_amount }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="price-summary" id="reservationDetail" style="display:none;">
+            <div class="price-row"><span>Customer</span><span id="detailCustomer">—</span></div>
+            <div class="price-row"><span>Room</span><span id="detailRoom">—</span></div>
+            <div class="price-row"><span>Dates</span><span id="detailDates">—</span></div>
+            <div class="price-row total"><span>Amount Due</span><span id="detailAmount">—</span></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount (₹)</label>
+              <input type="number" name="amount" id="amountInput" placeholder="0.00" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select name="method" required>
+                <option value="">— Select Method —</option>
+                <option value="Cash">💵 Cash</option>
+                <option value="Card">💳 Card</option>
+                <option value="UPI">📱 UPI</option>
+                <option value="Bank Transfer">🏦 Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary"> Process Payment</button>
+        </form>
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Payment History <span>All recorded transactions</span></div>
+        </div>
+        {% if data %}
+        <table>
+          <thead>
+            <tr>
+              <th>Payment ID</th>
+              <th>Reservation</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in data %}
+            <tr>
+              <td>#{{ p.Payment_ID }}</td>
+              <td>#{{ p.Reservation_ID }}</td>
+              <td>{{ p.customer_name }}</td>
+              <td>₹{{ p.Amount }}</td>
+              <td><span class="badge badge-info">{{ p.Payment_Method }}</span></td>
+              <td>{{ p.Payment_Date|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="empty-msg">No payments recorded yet.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function fillAmount() {
+  const sel = document.getElementById('reservationSelect');
+  const detail = document.getElementById('reservationDetail');
+  if (!sel.value) { detail.style.display='none'; document.getElementById('amountInput').value=''; return; }
+  const opt = sel.selectedOptions[0];
+  document.getElementById('amountInput').value = opt.dataset.amount;
+  const parts = opt.textContent.trim().split('|');
+  if (parts.length >= 4) {
+    document.getElementById('detailCustomer').textContent = parts[0].split('—')[1]?.trim() || '—';
+    document.getElementById('detailRoom').textContent = parts[1]?.trim() || '—';
+    document.getElementById('detailDates').textContent = parts[2]?.trim() || '—';
+    document.getElementById('detailAmount').textContent = parts[3]?.trim() || '—';
+  }
+  detail.style.display = 'block';
+}
+function confirmPayment() {
+  const amount = document.getElementById('amountInput').value;
+  if (!amount) return false;
+  return confirm('Process payment of ₹' + parseFloat(amount).toFixed(2) + '?');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,592 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Dashboard — Hotel Aurum</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ── Dark Theme Variables ── */
+    :root {
+      --gold:        #c9a84c;
+      --gold-light:  #e8c97a;
+      --gold-dim:    rgba(201,168,76,0.15);
+      --gold-glow:   rgba(201,168,76,0.08);
+      --card-bg:     #1a1814;
+      --card-border: #2a2620;
+      --card-hover:  #1f1d18;
+      --surface:     #141210;
+      --text-main:   #f0ead8;
+      --text-sub:    #7a7160;
+      --text-muted:  #4a4438;
+      --grid-line:   rgba(255,255,255,0.04);
+    }
+
+    /* ── Override page background for chart area ── */
+    .chart-section-wrapper {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 24px;
+      border: 1px solid var(--card-border);
+    }
+
+    .charts-section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .charts-section-title .gold-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--gold), transparent);
+    }
+    .charts-section-title .title-badge {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+    }
+
+    /* ── Chart Grids ── */
+    .charts-grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .charts-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── Chart Card ── */
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 24px;
+      border: 1px solid var(--card-border);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .chart-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(201,168,76,0.30);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.10);
+    }
+
+    /* Gold top bar */
+    .chart-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light), transparent);
+    }
+
+    /* Subtle corner glow */
+    .chart-card::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .chart-card-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .chart-card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 3px;
+    }
+    .chart-card-sub {
+      font-size: 11.5px;
+      color: var(--text-sub);
+      margin-bottom: 18px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Metric badge */
+    .metric-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(201,168,76,0.20), rgba(232,201,122,0.10));
+      border: 1px solid rgba(201,168,76,0.30);
+      color: var(--gold-light);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 30px;
+      padding: 5px 16px;
+      margin-bottom: 14px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Stat strip */
+    .stat-strip { display: flex; gap: 24px; margin-bottom: 16px; }
+    .stat-strip-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-strip-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Chart sizes */
+    .chart-wrap      { position: relative; height: 200px; }
+    .chart-wrap-tall { position: relative; height: 235px; }
+    .chart-wrap-sm   { position: relative; height: 170px; }
+
+    /* Custom legend */
+    .custom-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--text-sub);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .legend-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Divider between sections */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--card-border), transparent);
+      margin: 0 0 16px;
+    }
+
+    @media (max-width: 1100px) { .charts-grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 780px)  { .charts-grid-2, .charts-grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="sidebar-logo-text">
+        <h1>Hotel Aurum</h1>
+        <p>Management System</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard/" class="active"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/customers/"><span class="nav-icon">👤</span> Customers</a>
+      <a href="/hotels/"><span class="nav-icon">🏨</span> Hotels</a>
+      <a href="/rooms/"><span class="nav-icon">🛏</span> Rooms</a>
+      <div class="nav-label">Operations</div>
+      <a href="/reservation/"><span class="nav-icon">📅</span> Reservations</a>
+      <a href="/payment/"><span class="nav-icon">💳</span> Payments</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/logout/">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-sub">Welcome back, Admin</div>
+      </div>
+      <div class="topbar-badge"> Admin</div>
+    </div>
+
+    <div class="page">
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-top"><div class="stat-icon-box">👤</div><div class="stat-tag">↑ Active</div></div>
+          <div class="stat-value">{{ total_customers }}</div>
+          <div class="stat-label">Total Customers</div>
+          <div class="stat-bar"><div class="stat-bar-fill"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top"><div class="stat-icon-box">🛏</div><div class="stat-tag">↑ Open</div></div>
+          <div class="stat-value">{{ available_rooms }}<small>/{{ total_rooms }}</small></div>
+          <div class="stat-label">Rooms Available</div>
+          <div class="stat-bar"><div class="stat-bar-fill"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top"><div class="stat-icon-box">📅</div><div class="stat-tag">↑ Booked</div></div>
+          <div class="stat-value">{{ total_reservations }}</div>
+          <div class="stat-label">Reservations</div>
+          <div class="stat-bar"><div class="stat-bar-fill"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top"><div class="stat-icon-box">💰</div><div class="stat-tag">↑ Earned</div></div>
+          <div class="stat-value">₹{{ total_revenue }}</div>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-bar"><div class="stat-bar-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- ── Dark Chart Section ── -->
+      <div class="chart-section-wrapper">
+
+        <div class="charts-section-title">
+          <span class="title-badge">Analytics</span>
+          <span style="font-size:18px;">Performance Overview</span>
+          <span class="gold-line"></span>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Row 1 -->
+        <div class="charts-grid-3">
+
+          <!-- Revenue -->
+          <div class="chart-card">
+            <div class="chart-card-label">Financial</div>
+            <div class="chart-card-title">Revenue Trend</div>
+            <div class="chart-card-sub">Monthly revenue over the last 6 months</div>
+            <div class="stat-strip">
+              <div>
+                <div class="stat-strip-value">₹{{ total_revenue }}</div>
+                <div class="stat-strip-label">Total Collected</div>
+              </div>
+            </div>
+            <div class="chart-wrap-tall"><canvas id="revenueChart"></canvas></div>
+          </div>
+
+          <!-- Occupancy -->
+          <div class="chart-card">
+            <div class="chart-card-label">Capacity</div>
+            <div class="chart-card-title">Occupancy</div>
+            <div class="chart-card-sub">Current room usage rate</div>
+            <div class="metric-badge">🏨 {{ occupancy_rate }}% Occupied</div>
+            <div class="chart-wrap-sm"><canvas id="occupancyChart"></canvas></div>
+            <div class="custom-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>Occupied</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#2a2620"></div>Available</div>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="chart-card">
+            <div class="chart-card-label">Reservations</div>
+            <div class="chart-card-title">Status Split</div>
+            <div class="chart-card-sub">All booking statuses</div>
+            <div class="chart-wrap-sm"><canvas id="statusChart"></canvas></div>
+            <div class="custom-legend" id="statusLegend"></div>
+          </div>
+
+        </div>
+
+        <!-- Row 2 -->
+        <div class="charts-grid-2">
+
+          <!-- Bookings Bar -->
+          <div class="chart-card">
+            <div class="chart-card-label">Bookings</div>
+            <div class="chart-card-title">Monthly Reservations</div>
+            <div class="chart-card-sub">Number of check-ins recorded each month</div>
+            <div class="chart-wrap"><canvas id="bookingsChart"></canvas></div>
+          </div>
+
+          <!-- Avg Revenue -->
+          <div class="chart-card">
+            <div class="chart-card-label">Comparison</div>
+            <div class="chart-card-title">Avg Revenue per Booking</div>
+            <div class="chart-card-sub">Average revenue generated per reservation</div>
+            <div class="chart-wrap"><canvas id="avgRevenueChart"></canvas></div>
+          </div>
+
+        </div>
+
+      </div>
+      <!-- ── End Dark Chart Section ── -->
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Quick Actions <span>Jump to any section</span></div>
+        </div>
+        <div class="actions-grid">
+          <a href="/customers/" class="action-card">
+            <span class="action-card-icon">👤</span>
+            <div class="action-card-title">Customers</div>
+            <div class="action-card-desc">Register and manage guest profiles</div>
+            <div class="action-card-arrow">→</div>
+          </a>
+          <a href="/hotels/" class="action-card">
+            <span class="action-card-icon">🏨</span>
+            <div class="action-card-title">Hotels</div>
+            <div class="action-card-desc">Add and manage hotel properties</div>
+            <div class="action-card-arrow">→</div>
+          </a>
+          <a href="/rooms/" class="action-card">
+            <span class="action-card-icon">🛏</span>
+            <div class="action-card-title">Rooms</div>
+            <div class="action-card-desc">Configure rooms and categories</div>
+            <div class="action-card-arrow">→</div>
+          </a>
+          <a href="/reservation/" class="action-card">
+            <span class="action-card-icon">📅</span>
+            <div class="action-card-title">New Reservation</div>
+            <div class="action-card-desc">Book a room for a guest</div>
+            <div class="action-card-arrow">→</div>
+          </a>
+          <a href="/payment/" class="action-card">
+            <span class="action-card-icon">💳</span>
+            <div class="action-card-title">Payments</div>
+            <div class="action-card-desc">Process and track payments</div>
+            <div class="action-card-arrow">→</div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const revenueLabels  = {{ revenue_labels|safe }};
+  const revenueData    = {{ revenue_data|safe }};
+  const bookingsLabels = {{ bookings_labels|safe }};
+  const bookingsData   = {{ bookings_data|safe }};
+  const statusLabels   = {{ status_labels|safe }};
+  const statusData     = {{ status_data|safe }};
+  const occupancyData  = {{ occupancy_data|safe }};
+
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.color = '#7a7160';
+
+  const GOLD       = '#c9a84c';
+  const GOLD_LIGHT = '#e8c97a';
+  const GRID       = 'rgba(255,255,255,0.04)';
+  const TICK_COLOR = '#4a4438';
+
+  const tip = {
+    backgroundColor: '#0e0c0a',
+    titleColor: GOLD_LIGHT,
+    bodyColor: '#d4c9a8',
+    padding: 12,
+    cornerRadius: 8,
+    borderColor: 'rgba(201,168,76,0.25)',
+    borderWidth: 1,
+    displayColors: false,
+  };
+
+  const scaleDefaults = {
+    y: {
+      beginAtZero: true,
+      grid: { color: GRID, drawBorder: false },
+      border: { display: false },
+      ticks: { color: TICK_COLOR, font: { size: 11 } }
+    },
+    x: {
+      grid: { display: false },
+      border: { display: false },
+      ticks: { color: TICK_COLOR, font: { size: 11 } }
+    }
+  };
+
+  // ── 1. Revenue Line ──
+  const rCtx = document.getElementById('revenueChart').getContext('2d');
+  const rGrad = rCtx.createLinearGradient(0, 0, 0, 235);
+  rGrad.addColorStop(0, 'rgba(201,168,76,0.28)');
+  rGrad.addColorStop(0.6, 'rgba(201,168,76,0.06)');
+  rGrad.addColorStop(1, 'rgba(201,168,76,0.00)');
+
+  new Chart(rCtx, {
+    type: 'line',
+    data: {
+      labels: revenueLabels,
+      datasets: [{
+        data: revenueData,
+        borderColor: GOLD,
+        backgroundColor: rGrad,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#1a1814',
+        pointBorderColor: GOLD,
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointHoverBackgroundColor: GOLD,
+        tension: 0.45,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tip, callbacks: { label: c => ' ₹' + c.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ...scaleDefaults.y, ticks: { ...scaleDefaults.y.ticks, callback: v => '₹' + (v/1000).toFixed(0) + 'k' } },
+        x: scaleDefaults.x,
+      }
+    }
+  });
+
+  // ── 2. Occupancy Doughnut ──
+  new Chart(document.getElementById('occupancyChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Occupied', 'Available'],
+      datasets: [{
+        data: occupancyData,
+        backgroundColor: [GOLD, '#2a2620'],
+        borderColor: ['#1a1814','#1a1814'],
+        borderWidth: 3,
+        hoverOffset: 10,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '74%',
+      plugins: { legend: { display: false }, tooltip: tip }
+    }
+  });
+
+  // ── 3. Status Doughnut ──
+  const statusColors = ['#c9a84c','#3a9e6e','#3b7dd8','#e8c97a','#c0392b'];
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusData,
+        backgroundColor: statusColors,
+        borderColor: '#1a1814',
+        borderWidth: 3,
+        hoverOffset: 10,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '58%',
+      plugins: { legend: { display: false }, tooltip: tip }
+    }
+  });
+  const leg = document.getElementById('statusLegend');
+  statusLabels.forEach((l, i) => {
+    leg.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${statusColors[i]}"></div>${l}</div>`;
+  });
+
+  // ── 4. Bookings Bar ──
+  new Chart(document.getElementById('bookingsChart'), {
+    type: 'bar',
+    data: {
+      labels: bookingsLabels,
+      datasets: [{
+        data: bookingsData,
+        backgroundColor: bookingsData.map((_, i) =>
+          i === bookingsData.length - 1
+            ? GOLD
+            : 'rgba(201,168,76,0.18)'
+        ),
+        borderColor: bookingsData.map((_, i) =>
+          i === bookingsData.length - 1
+            ? GOLD_LIGHT
+            : 'rgba(201,168,76,0.35)'
+        ),
+        borderWidth: 1,
+        borderRadius: 7,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: tip },
+      scales: {
+        y: { ...scaleDefaults.y, ticks: { ...scaleDefaults.y.ticks, stepSize: 1 } },
+        x: scaleDefaults.x,
+      }
+    }
+  });
+
+  // ── 5. Avg Revenue per Booking ──
+  const avgData = bookingsData.map((b, i) => b > 0 ? Math.round(revenueData[i] / b) : 0);
+  const aCtx = document.getElementById('avgRevenueChart').getContext('2d');
+  const aGrad = aCtx.createLinearGradient(0, 0, 0, 200);
+  aGrad.addColorStop(0, 'rgba(58,158,110,0.22)');
+  aGrad.addColorStop(1, 'rgba(58,158,110,0.00)');
+
+  new Chart(aCtx, {
+    type: 'line',
+    data: {
+      labels: revenueLabels,
+      datasets: [{
+        data: avgData,
+        borderColor: '#3a9e6e',
+        backgroundColor: aGrad,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#1a1814',
+        pointBorderColor: '#3a9e6e',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointHoverBackgroundColor: '#3a9e6e',
+        tension: 0.45,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tip, callbacks: { label: c => ' ₹' + c.parsed.y.toLocaleString('en-IN') + ' avg' } }
+      },
+      scales: {
+        y: { ...scaleDefaults.y, ticks: { ...scaleDefaults.y.ticks, callback: v => '₹' + (v/1000).toFixed(0) + 'k' } },
+        x: scaleDefaults.x,
+      }
+    }
+  });
+</script>
+</body>
+</html>
