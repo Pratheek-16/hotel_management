@@ -2,60 +2,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Login — HotelAurum</title>
+  <title>Login — Hotel Aurum</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0a1628;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bg-layer {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 15% 15%, rgba(26,58,92,0.85) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 70% at 85% 85%, rgba(10,22,40,0.9) 0%, transparent 55%),
+        linear-gradient(135deg, #0a1628 0%, #0d1f35 60%, #091422 100%);
+      z-index: 0;
+    }
+    .dot-grid {
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, rgba(201,168,76,0.07) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+    }
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(70px); opacity: 0.10;
+      animation: floatOrb 9s ease-in-out infinite; z-index: 0;
+    }
+    .orb-1 { width: 450px; height: 450px; background: #c9a84c; top: -120px; right: -120px; animation-delay: 0s; }
+    .orb-2 { width: 320px; height: 320px; background: #c9a84c; bottom: -80px; left: -80px; animation-delay: 4s; }
+    @keyframes floatOrb {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(15px,-25px) scale(1.06); }
+    }
+
+    /* ── Split Layout ── */
+    .login-wrapper {
+      position: relative; z-index: 10;
+      display: flex;
+      width: 900px; max-width: 96vw;
+      min-height: 560px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.2);
+      animation: wrapperEntrance 0.8s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes wrapperEntrance {
+      from { opacity:0; transform: translateY(32px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Left Panel ── */
+    .left-panel {
+      flex: 1;
+      background: linear-gradient(160deg, #1a3a5c 0%, #0f2540 60%, #091830 100%);
+      padding: 52px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    }
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+      position: relative; z-index: 2;
+    }
+    .brand-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, #c9a84c, #e8c97a);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(201,168,76,0.35); transform: scale(1); }
+      50%      { box-shadow: 0 4px 28px rgba(201,168,76,0.5); transform: scale(1.04); }
+    }
+    .brand-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 700;
+      color: #f0ead8; line-height: 1;
+    }
+    .brand-text p {
+      font-size: 10px; letter-spacing: 1.8px;
+      text-transform: uppercase; color: #c9a84c;
+      margin-top: 3px;
+    }
+
+    .left-content { position: relative; z-index: 2; }
+    .left-content h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px; font-weight: 700;
+      color: #f0ead8; line-height: 1.3;
+      margin-bottom: 14px;
+    }
+    .left-content h2 em {
+      font-style: italic;
+      background: linear-gradient(135deg, #e8c97a, #c9a84c);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .left-content p {
+      font-size: 13.5px; color: rgba(240,234,216,0.55);
+      line-height: 1.7; margin-bottom: 32px;
+    }
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .feature-list li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: rgba(240,234,216,0.70);
+    }
+    .feature-list li .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #c9a84c; flex-shrink: 0;
+    }
+
+    .left-footer {
+      font-size: 11px; color: rgba(255,255,255,0.2);
+      position: relative; z-index: 2;
+    }
+
+    /* ── Right Panel (Form) ── */
+    .right-panel {
+      width: 400px; flex-shrink: 0;
+      background: #fdf6e3;
+      padding: 52px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+    .right-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, transparent, #c9a84c, #e8c97a, #c9a84c, transparent);
+    }
+
+    .form-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 700;
+      color: #1a3a5c; margin-bottom: 6px;
+    }
+    .form-sub {
+      font-size: 13px; color: #9ca3af;
+      margin-bottom: 36px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.2px; text-transform: uppercase;
+      color: #1a3a5c; margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%; padding: 13px 16px;
+      background: #fff;
+      border: 1.5px solid #e8e2d9;
+      border-radius: 10px;
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      color: #1c1a16;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: #c9a84c;
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+    .form-group input::placeholder { color: #c5bfb3; }
+
+    /* Alert */
+    .alert-error {
+      background: #fee2e2; border: 1px solid #fca5a5;
+      border-radius: 10px; padding: 12px 16px;
+      font-size: 13px; color: #991b1b;
+      margin-bottom: 20px;
+    }
+
+    .submit-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, #1a3a5c, #1e4976);
+      color: #e8c97a;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(26,58,92,0.3);
+      letter-spacing: 0.3px;
+      position: relative; overflow: hidden;
+    }
+    .submit-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.15), transparent);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(26,58,92,0.4);
+      color: #fff;
+    }
+    .submit-btn:hover::before { opacity: 1; }
+
+    .back-link {
+      text-align: center; margin-top: 20px;
+      font-size: 13px; color: #9ca3af;
+    }
+    .back-link a {
+      color: #c9a84c; font-weight: 600;
+      text-decoration: none; transition: color 0.2s;
+    }
+    .back-link a:hover { color: #8a6a1c; }
+
+    @media (max-width: 700px) {
+      .left-panel { display: none; }
+      .right-panel { width: 100%; }
+      .login-wrapper { width: 100%; border-radius: 0; min-height: 100vh; }
+    }
+  </style>
 </head>
 <body>
+  <div class="bg-layer"></div>
+  <div class="dot-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 
-<div class="login-page">
-  <div class="login-box">
+  <div class="login-wrapper">
 
-   <div class="login-logo">
-  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:12px;">
-    <rect width="56" height="56" rx="16" fill="url(#grad)"/>
-    <defs>
-      <linearGradient id="grad" x1="0" y1="0" x2="56" y2="56">
-        <stop offset="0%" stop-color="#0ea5e9"/>
-        <stop offset="100%" stop-color="#14b8a6"/>
-      </linearGradient>
-    </defs>
-    <rect x="12" y="22" width="32" height="22" rx="2" fill="white" fill-opacity="0.15"/>
-    <rect x="16" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="25" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="34" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="16" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="25" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="34" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <path d="M10 22 L28 10 L46 22" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
-    <rect x="23" y="12" width="10" height="2" rx="1" fill="white" fill-opacity="0.6"/>
-  </svg>
-  <h1>Hotel Aurum</h1>
-  <p>Management System — Sign in to continue</p>
-</div>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}" style="margin-bottom:16px;">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-
-    <form method="post">
-      {% csrf_token %}
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" name="username" placeholder="Enter username" required autofocus>
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Hotel Aurum</h1>
+          <p>Management System</p>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" name="password" placeholder="Enter password" required>
+
+      <div class="left-content">
+        <h2>Manage your hotel<br>with <em>elegance</em></h2>
+        <p>A powerful, unified platform for all your hotel operations — from guest check-in to revenue analytics.</p>
+        <ul class="feature-list">
+          <li><div class="dot"></div> Real-time room availability tracking</li>
+          <li><div class="dot"></div> Automated email notifications</li>
+          <li><div class="dot"></div> Interactive revenue analytics</li>
+          <li><div class="dot"></div> Full reservation lifecycle management</li>
+          <li><div class="dot"></div> Secure session-based admin access</li>
+        </ul>
       </div>
-      <button type="submit" class="btn btn-primary" style="margin-top:8px;">Sign In</button>
-    </form>
+
+      <div class="left-footer">© 2026 Hotel Aurum. All rights reserved.</div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <div class="form-heading">Welcome back</div>
+      <div class="form-sub">Sign in to your admin account</div>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-error">⚠️ {{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" name="username" placeholder="Enter your username" required autofocus>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="submit-btn">Sign In →</button>
+      </form>
+
+      <div class="back-link"><a href="/">← Back to Home</a></div>
+    </div>
 
   </div>
-</div>
-
 </body>
 </html>

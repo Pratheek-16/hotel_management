@@ -2,49 +2,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Hotel Aurum</title>
+  <title>Hotel Aurum — Management System</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0d1f35;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Animated background ── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(26,58,92,0.9) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(14,35,60,0.8) 0%, transparent 60%),
+        linear-gradient(135deg, #0a1628 0%, #0d1f35 50%, #091422 100%);
+      z-index: 0;
+    }
+
+    /* Floating gold orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.12;
+      animation: floatOrb 8s ease-in-out infinite;
+      z-index: 0;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #c9a84c; top: -100px; right: -100px; animation-delay: 0s; }
+    .orb-2 { width: 300px; height: 300px; background: #c9a84c; bottom: -80px; left: -80px; animation-delay: 3s; }
+    .orb-3 { width: 200px; height: 200px; background: #e8c97a; top: 50%; left: 30%; animation-delay: 5s; opacity: 0.06; }
+
+    @keyframes floatOrb {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, -30px) scale(1.08); }
+    }
+
+    /* Gold dot grid pattern */
+    .dot-grid {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(201,168,76,0.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+    }
+
+    /* ── Card ── */
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(253,246,227,0.97);
+      border-radius: 24px;
+      padding: 56px 52px;
+      width: 520px;
+      max-width: 95vw;
+      text-align: center;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(201,168,76,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+      animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(40px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Gold top bar */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #c9a84c, #e8c97a, #c9a84c, transparent);
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, #1a3a5c, #1e4976);
+      border-radius: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(26,58,92,0.4), 0 0 0 3px rgba(201,168,76,0.25);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: 0 8px 24px rgba(26,58,92,0.4), 0 0 0 3px rgba(201,168,76,0.25); }
+      50%       { box-shadow: 0 8px 32px rgba(26,58,92,0.5), 0 0 0 6px rgba(201,168,76,0.15); }
+    }
+    .logo-wrap svg { display: block; }
+
+    /* ── Title ── */
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a3a5c;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #7a7160;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 32px;
+    }
+
+    /* ── Gold divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .divider-line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, #c9a84c, transparent); }
+    .divider-diamond {
+      width: 6px; height: 6px;
+      background: #c9a84c;
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+
+    /* ── Feature pills ── */
+    .features {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(26,58,92,0.07);
+      border: 1px solid rgba(26,58,92,0.12);
+      border-radius: 30px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a3a5c;
+      transition: all 0.2s;
+    }
+    .feature-pill:hover {
+      background: rgba(201,168,76,0.12);
+      border-color: rgba(201,168,76,0.35);
+      color: #8a6a1c;
+    }
+    .feature-pill span { font-size: 14px; }
+
+    /* ── CTA Button ── */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      background: linear-gradient(135deg, #1a3a5c, #1e4976);
+      color: #e8c97a;
+      text-decoration: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-family: 'DM Sans', sans-serif;
+      border: 1px solid rgba(201,168,76,0.25);
+      box-shadow: 0 4px 20px rgba(26,58,92,0.3);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .cta-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(26,58,92,0.4), 0 0 0 1px rgba(201,168,76,0.4);
+      color: #fff;
+    }
+    .cta-btn:hover::before { opacity: 1; }
+
+    .login-link {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+    .login-link a {
+      color: #c9a84c;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .login-link a:hover { color: #8a6a1c; }
+
+    /* ── Footer note ── */
+    .card-footer {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(201,168,76,0.15);
+      font-size: 11px;
+      color: #bbb;
+      letter-spacing: 0.5px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="login-page">
-  <div class="login-box" style="text-align:center; max-width:480px;">
+  <div class="bg-layer"></div>
+  <div class="dot-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-    <div class="login-logo">
-  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:12px;">
-    <rect width="56" height="56" rx="16" fill="url(#grad)"/>
-    <defs>
-      <linearGradient id="grad" x1="0" y1="0" x2="56" y2="56">
-        <stop offset="0%" stop-color="#0ea5e9"/>
-        <stop offset="100%" stop-color="#14b8a6"/>
-      </linearGradient>
-    </defs>
-    <rect x="12" y="22" width="32" height="22" rx="2" fill="white" fill-opacity="0.15"/>
-    <rect x="16" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="25" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="34" y="26" width="6" height="6" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="16" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="25" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <rect x="34" y="36" width="6" height="8" rx="1" fill="white" fill-opacity="0.9"/>
-    <path d="M10 22 L28 10 L46 22" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
-    <rect x="23" y="12" width="10" height="2" rx="1" fill="white" fill-opacity="0.6"/>
-  </svg>
-  <h1>Hotel Aurum</h1>
-  <p>Management System — Sign in to continue</p>
-</div>
+  <div class="card">
 
-    <p style="color:var(--text-muted); font-size:14px; line-height:1.7; margin-bottom:28px;">
-      Manage reservations, payments, rooms and guests — all from one elegant dashboard.
-    </p>
+    <div class="logo-wrap">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#e8c97a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
 
-    <a href="/login/" class="btn btn-primary" style="display:flex; justify-content:center;">
-       Enter Dashboard
-    </a>
+    <h1 class="title">Hotel Aurum</h1>
+    <p class="subtitle">Management System — Sign in to continue</p>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-diamond"></div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="features">
+      <div class="feature-pill"><span>🏨</span> Room Management</div>
+      <div class="feature-pill"><span>📅</span> Reservations</div>
+      <div class="feature-pill"><span>💳</span> Payments</div>
+      <div class="feature-pill"><span>📊</span> Analytics</div>
+      <div class="feature-pill"><span>✉️</span> Email Alerts</div>
+    </div>
+
+    <a href="/login/" class="cta-btn">Enter Dashboard (Login required)→</a>
+    <p class="login-link">Admin access only — <a href="/login/">Sign in here</a></p>
+
+    <div class="card-footer">© 2026 Hotel Aurum · All rights reserved</div>
 
   </div>
-</div>
 
 </body>
 </html>
